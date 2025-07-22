@@ -1,0 +1,56 @@
+# Zenoh Docker Simulator Configuration Example
+
+# General settings for the simulation
+simulation:
+  # Name of the Docker network to be created
+  network_name: zenoh_sim_net
+  # Base subnet for the Docker network.
+  # Ensure this doesn't conflict with other networks on your system.
+  subnet: 172.25.0.0/16
+
+# Definition of the Zenoh router
+# The simulator currently supports a single router.
+zenoh_router:
+  name: zenoh-router
+  # Zenoh router listen endpoint.
+  # The container name 'zenoh-router' will be resolved within the Docker network.
+  listen: "tcp/zenoh-router:7447"
+
+# List of nodes to be simulated.
+# Each item in this list represents a Docker container.
+nodes:
+  - name: node1
+    # The application to run inside this node's container.
+    # This should correspond to a directory name in the 'apps/' directory.
+    app: sample_publisher
+    # Zenoh key expression for this node to connect to the router.
+    connect: "tcp/zenoh-router:7447"
+    # Dependencies for startup order. This node will wait for 'node2' to be healthy.
+    # (Note: Health check implementation is required in the Dockerfile)
+    depends_on:
+      - node2
+
+  - name: node2
+    app: sample_subscriber
+    connect: "tcp/zenoh-router:7447"
+    # This node has no dependencies and will start immediately.
+    depends_on: []
+
+  - name: node3
+    app: sample_subscriber
+    connect: "tcp/zenoh-router:7447"
+    depends_on: []
+
+# (Future Implementation) Network emulation settings
+# This section will allow simulating network latency, jitter, and packet loss.
+# network_emulation:
+#   default:
+#     latency: 0ms
+#     jitter: 0ms
+#     loss: 0%
+#   links:
+#     - from: node1
+#       to: node2
+#       latency: 100ms
+#       jitter: 10ms
+#       loss: 1%

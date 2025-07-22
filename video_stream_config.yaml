@@ -1,0 +1,81 @@
+description: |
+  Configuration for video streaming simulation
+
+  では、このZemohDockerSimulationシステムで、以下の構成のシミュレーションを実行しよう。
+  ・クライアントノード2台
+    ストリームデータ（サンプル画像データ[/home/otogr/test_video/SampleJPGImage_5mbmb.jpg]や映像データ[/home/otogr/test_video/test_video_100mb.mp4]）を受信し続けつつ、Zenohの通信トラフィック（あらゆる評価指標で）を受信開始・終了までCSVデータとして保存する。
+  ・ルータノード2台
+    キャッシング機能、フォワーディング、ルーティング機能など
+  ・プロデューサーノード1台
+    サンプルデータを終了までストリームし続ける。
+
+  -----
+
+  このシミュレーションを実行するために、次の手順を実行した。
+  - 新しいアプリケーション `stream_producer` と `stream_client` を作成。
+  - ルータのキャッシングを有効にする設定ファイル `config/zenoh-router-config.json5` を作成。
+  - `main.py` を更新し、ボリュームマウントやコマンド引数の設定など、より複雑な構成に対応できるようにした。
+  - 要求されたシミュレーション構成を記述した `video_stream_config.yaml` を作成。
+  - `docker-compose.yaml` を更新し、`video_stream_config.yaml` を読み込むようにした。
+
+  ```bash
+  pip install -r /home/otogr/icn_ws/zenoh_docker_simulator/requirements.txt PyYAML pandas psutil
+  python main.py --config video_stream_config.yaml
+  ```
+
+  docker-compose が起動し、2台のルータ、1台のプロデューサー、2台のクライアントが設定通りに起動します。
+  シミュレーションが終了（または Ctrl+C で中断）すると、クライアントノードは収集した通信メトリクスを
+  results/client1/client1_metrics.csv と results/client2/client2_metrics.csv にそれぞれ保存します。
+
+simulation:
+  network_name: zenoh_video_stream_net
+  subnet: 172.26.0.0/16
+
+# Define two routers with caching enabled
+zenoh_routers:
+  - name: router1
+    config_file: config/zenoh-router-config.json5
+    storage_path: data/router1_storage
+  - name: router2
+    config_file: config/zenoh-router-config.json5
+    storage_path: data/router2_storage
+
+nodes:
+  # Producer node to stream the video file
+  - name: producer_node
+    app: stream_producer
+    connect: "tcp/router1:7447"
+    args:
+      file: /data/test_video_100mb.mp4
+      key: stream/video
+    volumes:
+      - local: /home/otogr/test_video/test_video_100mb.mp4
+        container: /data/test_video_100mb.mp4:ro
+    depends_on:
+      - router1
+
+  # Client node 1 connected to router1
+  - name: client_node1
+    app: stream_client
+    connect: "tcp/router1:7447"
+    args:
+      key: stream/video
+      output: /output/client1_metrics.csv
+    volumes:
+      - local: results/client1
+        container: /output
+    depends_on:
+      - router1
+
+  # Client node 2 connected to router2
+  - name: client_node2
+    app: stream_client
+    connect: "tcp/router2:7447"
+    args:
+      key: stream/video
+      output: /output/client2_metrics.csv
+    volumes:
+      - local: results/client2
+        container: /output
+    depends_on:
+      - router2

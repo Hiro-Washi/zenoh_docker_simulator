@@ -1,0 +1,31 @@
+// ルータのキャッシング機能を有効にするための設定ファイル
+{
+  // Basic listener configuration
+  listen: {
+    endpoints: ["tcp/0.0.0.0:7447"],
+  },
+
+  // Enable the REST API for monitoring (optional but useful)
+  rest: {
+    http_port: 8000,
+  },
+
+  // Caching configuration
+  // This enables storage for caching data from producers.
+  storage: {
+    // Unique ID for this storage instance
+    id: "my-storage-01",
+    // Key expression to cache. Here, we cache everything under 'stream/**'
+    key_expr: "stream/**",
+    // Volume specifies where to store the data on disk.
+    // This path will be inside the Docker container.
+    volume: {
+      backend: "fs",
+      options: {
+        path: "/data/zenoh-storage",
+      },
+    },
+  },
+
+  // You can add more advanced routing, forwarding, and security settings here.
+}

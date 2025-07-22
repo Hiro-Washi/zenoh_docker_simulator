@@ -1,0 +1,40 @@
+# Simulation settings
+# volumes や args のようなDocker固有の設定を抽象化し、代わりに以下のようなシミュレーションの目的に特化したキーを使います。
+# この改良によるメリット
+# - __直感的:__ `stream_file` や `output_file` のように、目的が明確なキーを使うため、設定内容が分かりやすくなります。
+# - __シンプル:__ Dockerの `volumes` マウントやコマンド引数の複雑な記述が不要になります。
+# - __再利用性:__ `main.py` が裏側で複雑な処理を担うため、`config.yaml` はシンプルに保たれ、様々なシミュレーションで再利用しやすくなります。
+
+simulation:
+  name: video_stream_simulation
+  network_name: zenoh_video_net
+  subnet: 172.28.0.0/16
+
+# Router definitions
+routers:
+  - name: router1
+    caching: true  # A simple flag to enable/disable caching
+  - name: router2
+    caching: true
+
+# Node definitions
+nodes:
+  - name: producer_node
+    app: stream_producer
+    # --- Producer specific settings ---
+    stream_file: /home/otogr/test_video/test_video_100mb.mp4 # File to stream
+    stream_key: stream/video                                # Zenoh key to use
+
+  - name: client_node1
+    app: stream_client
+    connect_to: router1  # Specify which router to connect to
+    # --- Client specific settings ---
+    subscribe_key: stream/video                             # Zenoh key to subscribe to
+    output_file: results/client1/metrics.csv                # Where to save the output CSV
+
+  - name: client_node2
+    app: stream_client
+    connect_to: router2
+    subscribe_key: stream/video
+    output_file: results/client2/metrics.csv
+

@@ -1,0 +1,39 @@
+# Dockerの詳細を意識することなく、シミュレーションの「意図」を直接的に記述できるように簡素化
+simulation:
+  name: video_stream_simulation
+  network_name: zenoh_video_net
+  subnet: 172.27.0.0/16
+
+topology:
+  routers:
+    - name: router1
+      caching: true # キャッシュの有効/無効をフラグで管理
+    - name: router2
+      caching: true
+  links:
+    # ルータ間やノードとルータの接続を定義 (将来的な拡張)
+    - from: producer_node
+      to: router1
+    - from: client_node1
+      to: router1
+    - from: client_node2
+      to: router2
+    # - from: router1
+    #   to: router2
+
+nodes:
+  - name: producer_node
+    app: stream_producer
+    stream_file: /home/otogr/test_video/test_video_100mb.mp4
+    stream_key: stream/video
+
+  - name: client_node1
+    app: stream_client
+    subscribe_key: stream/video
+    output_file: results/client1/metrics.csv
+
+  - name: client_node2
+    app: stream_client
+    subscribe_key: stream/video
+    output_file: results/client2/metrics.csv
+
