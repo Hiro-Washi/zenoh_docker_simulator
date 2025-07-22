@@ -1,6 +1,6 @@
 # Zenoh Docker Simulator
 
-Zenohプロトコルを利用した分散システムのための、Dockerベースのシミュレーション環境です。
+Zenohを用いたネットワークシステム検証向けのDockerシミュレーション環境です。
 
 ## 概要
 
